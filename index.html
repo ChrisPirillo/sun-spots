@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    
+    <!-- Primary SEO -->
+    <title>Sun Spots | Interactive Solar Nebula & Plasma Simulation</title>
+    <meta name="description" content="Experience Sun Spots, a high-performance interactive WebGL simulation of solar plasma and nebula artifacts. Explore procedural solar surfaces with real-time controls for turbulence, chaos, and solar flares.">
+    <meta name="keywords" content="Sun Spots, WebGL Simulation, Solar Plasma, Nebula Artifact, Interactive Art, Procedural Generation, Solar Surface Simulation">
+    <link rel="canonical" href="https://pirillo.com/arcade/sun-spots.html">
+    <meta name="author" content="Chris Pirillo">
+
+    <!-- Social Media Metadata -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pirillo.com/arcade/sun-spots.html">
+    <meta property="og:title" content="Sun Spots | Interactive Solar Nebula Simulation">
+    <meta property="og:description" content="Dive into a mesmerizing, procedurally generated solar plasma simulation. Customize your nebula with real-time controls.">
+    <meta property="og:image" content="https://pirillo.com/arcade/images/sun-spots.png">
+
+    <!-- Twitter Card Metadata -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@ChrisPirillo">
+    <meta name="twitter:creator" content="@ChrisPirillo">
+    <meta name="twitter:title" content="Sun Spots | Solar Nebula Artifact">
+    <meta name="twitter:description" content="An interactive 4K-ready solar plasma and nebula simulation built with high-performance WebGL.">
+    <meta name="twitter:image" content="https://pirillo.com/arcade/images/sun-spots.png">
+
+    <!-- Resource Hints -->
+    <link rel="preconnect" href="https://www.googletagmanager.com">
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Sun Spots",
+      "url": "https://pirillo.com/arcade/sun-spots.html",
+      "description": "An interactive WebGL simulation of solar spots and plasma turbulence.",
+      "applicationCategory": "ArtApplication",
+      "genre": "Generative Art",
+      "browserRequirements": "Requires WebGL support",
+      "author": {
+        "@type": "Person",
+        "name": "Chris Pirillo",
+        "url": "https://pirillo.com"
+      }
+    }
+    </script>
+
+    <!-- Google Tag Manager -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1CQ4D3VQ3L"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-1CQ4D3VQ3L');
+    </script>
+
+    <style>
+        :root {
+            --ui-bg: rgba(15, 15, 20, 0.92);
+            --ui-border: rgba(255, 255, 255, 0.08);
+            --ui-text: #e0e0e0;
+            --ui-text-dim: #888;
+            --accent: #00bcd4;
+            --accent-hover: #26c6da;
+            --group-bg: rgba(255, 255, 255, 0.03);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            transition: opacity 0.5s ease-in-out;
+            cursor: grab;
+            image-rendering: auto;
+            touch-action: none;
+        }
+
+        canvas:active {
+            cursor: grabbing;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #menu-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            background: var(--ui-bg);
+            border: 1px solid var(--ui-border);
+            border-radius: 8px;
+            cursor: pointer;
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(10px);
+            transition: transform 0.2s, background 0.2s;
+            z-index: 20;
+        }
+
+        #menu-btn:hover {
+            background: rgba(40, 40, 45, 0.9);
+            transform: scale(1.05);
+        }
+
+        .bar {
+            width: 24px;
+            height: 2px;
+            background-color: var(--ui-text);
+            border-radius: 2px;
+            transition: 0.3s;
+        }
+
+        #settings-panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 340px;
+            height: 100%;
+            background: var(--ui-bg);
+            backdrop-filter: blur(15px);
+            border-left: 1px solid var(--ui-border);
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            box-sizing: border-box;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+            font-size: 13px;
+        }
+
+        #settings-panel.open {
+            transform: translateX(0);
+        }
+
+        .panel-header {
+            padding: 0 20px;
+            height: 84px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--ui-border);
+            background: rgba(0,0,0,0.2);
+            box-sizing: border-box;
+        }
+
+        h1, h2 {
+            margin: 0;
+            font-size: 16px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+
+        details {
+            margin-bottom: 2px;
+            background: var(--group-bg);
+        }
+
+        details[open] {
+            background: rgba(255, 255, 255, 0.05);
+            padding-bottom: 10px;
+        }
+
+        summary {
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #ccc;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: color 0.2s;
+        }
+
+        summary:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary::after {
+            content: '+';
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        details[open] summary::after {
+            content: '-';
+        }
+
+        .control-group {
+            padding: 8px 20px;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            color: var(--ui-text-dim);
+            margin-bottom: 6px;
+        }
+
+        label span:last-child {
+            color: var(--accent);
+            font-family: monospace;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            appearance: none;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .panel-footer {
+            padding: 20px;
+            border-top: 1px solid var(--ui-border);
+            background: rgba(0,0,0,0.2);
+        }
+
+        .button-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--ui-border);
+            color: var(--ui-text);
+            padding: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+        }
+
+        button.full-width {
+            grid-column: span 2;
+            margin-top: 10px;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px 10px 20px;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 18px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #333;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 12px;
+            width: 12px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(18px); }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <main id="app-container">
+        <h1 class="visually-hidden">Sun Spots - Interactive Solar Nebula Simulation</h1>
+        
+        <canvas id="glcanvas" aria-label="Interactive solar plasma simulation canvas"></canvas>
+
+        <nav id="ui-layer" aria-label="Simulation Controls">
+            
+            <button id="menu-btn" aria-label="Open Settings" aria-expanded="false">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </button>
+
+            <section id="settings-panel" aria-labelledby="config-title">
+                <header class="panel-header">
+                    <h2 id="config-title">Configuration</h2>
+                </header>
+                
+                <div class="panel-content" id="controls-container">
+                    <!-- Controls injected by JS -->
+                </div>
+
+                <footer class="panel-footer">
+                    <div class="toggle-row">
+                        <span style="color:var(--ui-text-dim);">Auto Advance</span>
+                        <label class="switch">
+                            <input type="checkbox" id="auto-advance-toggle" aria-label="Toggle Auto Advance">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="button-row">
+                        <button id="btn-random">Randomize</button>
+                        <button id="btn-reset">Reset</button>
+                        <button id="btn-export" class="full-width">Export 4K Wallpaper</button>
+                    </div>
+                </footer>
+            </section>
+        </nav>
+    </main>
+
+    <!-- Shaders -->
+    <script id="vs" type="x-shader/x-vertex">
+        attribute vec2 position;
+        void main() {
+            gl_Position = vec4(position, 0.0, 1.0);
+        }
+    </script>
+
+    <script id="fs" type="x-shader/x-fragment">
+        precision highp float;
+
+        uniform vec2 u_resolution;
+        uniform float u_time;
+        
+        uniform float u_iterations;
+        uniform float u_density_exp;
+        uniform float u_accum_factor;
+        uniform vec3 u_color_base;
+        uniform vec3 u_color_core; 
+        uniform float u_geo_scale;
+        uniform float u_noise_scale;
+        uniform float u_step_add;
+        uniform float u_cam_z;
+        uniform float u_anim_speed;
+        uniform vec3 u_anim_vec; 
+        uniform vec2 u_rotation; 
+        uniform float u_chaos;      
+        uniform float u_pulse_mag;  
+        uniform float u_core_int;   
+
+        uniform float u_layer2_int;
+        uniform float u_layer2_scale;
+        uniform vec3 u_color_l2; 
+        
+        // Performance: Calculate rotation matrices once per fragment
+        mat2 rot(float a) {
+            float s = sin(a);
+            float c = cos(a);
+            return mat2(c, -s, s, c);
+        }
+
+        vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+        vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+        vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
+        vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+
+        float snoise(vec3 v) {
+            const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
+            const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
+
+            vec3 i  = floor(v + dot(v, C.yyy) );
+            vec3 x0 = v - i + dot(i, C.xxx) ;
+
+            vec3 g = step(x0.yzx, x0.xyz);
+            vec3 l = 1.0 - g;
+            vec3 i1 = min( g.xyz, l.zxy );
+            vec3 i2 = max( g.xyz, l.zxy );
+
+            vec3 x1 = x0 - i1 + C.xxx;
+            vec3 x2 = x0 - i2 + C.yyy;
+            vec3 x3 = x0 - D.yyy;
+
+            i = mod289(i);
+            vec4 p = permute( permute( permute(
+                        i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
+                    + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
+                    + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+
+            float n_ = 0.142857142857;
+            vec3  ns = n_ * D.wyz - D.xzx;
+
+            vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+
+            vec4 x_ = floor(j * ns.z);
+            vec4 y_ = floor(j - 7.0 * x_ );
+
+            vec4 x = x_ *ns.x + ns.yyyy;
+            vec4 y = y_ *ns.x + ns.yyyy;
+            vec4 h = 1.0 - abs(x) - abs(y);
+
+            vec4 b0 = vec4( x.xy, y.xy );
+            vec4 b1 = vec4( x.zw, y.zw );
+
+            vec4 s0 = floor(b0)*2.0 + 1.0;
+            vec4 s1 = floor(b1)*2.0 + 1.0;
+            vec4 sh = -step(h, vec4(0.0));
+
+            vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
+            vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
+
+            vec3 p0 = vec3(a0.xy,h.x);
+            vec3 p1 = vec3(a0.zw,h.y);
+            vec3 p2 = vec3(a1.xy,h.z);
+            vec3 p3 = vec3(a1.zw,h.w);
+
+            vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+            p0 *= norm.x;
+            p1 *= norm.y;
+            p2 *= norm.z;
+            p3 *= norm.w;
+
+            vec4 m = max(0.5 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+            m = m * m;
+            return 105.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),
+                                        dot(p2,x2), dot(p3,x3) ) );
+        }
+
+        void main() {
+            vec2 r = u_resolution;
+            vec2 uv = (gl_FragCoord.xy - 0.5 * r) / r.y;
+            float t = u_time * u_anim_speed;
+            
+            vec4 o = vec4(0.0); 
+            float g = 0.0; 
+            float T = 1.0; 
+            
+            // Performance: Hoist invariant calculations
+            float breath = 1.0 + sin(t * 0.5) * u_pulse_mag;
+            mat2 rotY = rot(u_rotation.y);
+            mat2 rotX = rot(u_rotation.x);
+            vec3 animOffset = vec3(0.0, -sin(t*0.2), cos(t*0.2)) * u_anim_vec.z;
+
+            // --- LAYER 1: SOLAR PLASMA SPHERE ---
+            for(int i=0; i<85; i++) { 
+                vec3 p = vec3(uv * g, g - u_cam_z);
+                
+                // Rotations
+                p.yz *= rotY;
+                p.xz *= rotX;
+                
+                vec3 p_sized = p / breath;
+                
+                // Optimized Noise Sampling
+                vec3 warp = vec3(
+                    snoise(p_sized * 0.5 + t * 0.1), 
+                    snoise(p_sized * 0.5 + t * 0.15 + 4.0), 
+                    snoise(p_sized * 0.5 + t * 0.2 + 8.0)
+                ) * u_chaos;
+                
+                vec3 noiseCoord = (p_sized + warp) * u_geo_scale * 0.5;
+                
+                float n1 = snoise(noiseCoord + animOffset);
+                float n2 = snoise(noiseCoord * 3.0 + animOffset * 2.0);
+                float noiseVal = n1 + n2 * 0.2; 
+                
+                float d = (length(p_sized) - 1.0) - (noiseVal * (0.2 + u_pulse_mag));
+
+                float emission = exp(-abs(d) * u_density_exp * 0.1); 
+                float absorption = smoothstep(0.05, -0.05, d);
+                float light_density = (emission + absorption * 0.5) * u_accum_factor;
+
+                vec3 col = mix(u_color_base, u_color_core, smoothstep(-0.2, 0.6, n1 + n2 * 0.5));
+                
+                o.rgb += col * (light_density * T);
+                T *= (1.0 - absorption * u_accum_factor * 15.0);
+                
+                g += max(abs(d) * 0.25, u_step_add);
+                if(T < 0.005 || g > u_cam_z + 3.0) break; 
+            }
+            
+            // --- LAYER 2: THE ARTIFACT ---
+            if(u_layer2_int > 0.001) {
+                vec4 o2 = vec4(0.0);
+                float g2 = 0.0;
+                float rot2_val = t * 0.2;
+                mat2 rot2_1 = rot(rot2_val);
+                mat2 rot2_2 = rot(rot2_val * 0.7);
+                
+                for(int j=0; j<25; j++) {
+                    vec3 p2 = vec3(uv * g2, g2 - u_cam_z);
+                    p2.yz *= rotY;
+                    p2.xz *= rotX;
+                    p2.xz *= rot2_1;
+                    p2.yz *= rot2_2;
+                    
+                    vec3 q2 = cos(p2 * u_layer2_scale); 
+                    vec3 noiseIn = p2 * float(j) + vec3(0.0, -sin(t), cos(t)) * 0.4;
+                    
+                    float d2 = max(
+                        (length(p2) - 1.0) - 0.05,
+                        (distance(q2, p2 * 2.5)) * snoise(noiseIn) * 0.00204 // 1/489
+                    );
+                    
+                    g2 += d2 + 0.0045; 
+                    o2 += exp(-d2 * 600.0) * 0.025 * vec4(u_color_l2, 0.0);
+                }
+                o += o2 * u_layer2_int;
+            }
+            gl_FragColor = vec4(o.rgb, 1.0);
+        }
+    </script>
+
+    <script>
+        const canvas = document.getElementById('glcanvas');
+        const gl = canvas.getContext('webgl', { 
+            preserveDrawingBuffer: true, 
+            antialias: false,
+            powerPreference: "high-performance" // Performance hint
+        });
+
+        const params = {
+            color_r: { group: "Colors: Solar", val: 0.1, min: 0.0, max: 3.0, step: 0.1, name: "Outer Red" },
+            color_g: { group: "Colors: Solar", val: 0.8, min: 0.0, max: 3.0, step: 0.1, name: "Outer Green" },
+            color_b: { group: "Colors: Solar", val: 1.5, min: 0.0, max: 3.0, step: 0.1, name: "Outer Blue" },
+            core_r: { group: "Colors: Solar", val: 2.0, min: 0.0, max: 3.0, step: 0.1, name: "Core Red" },
+            core_g: { group: "Colors: Solar", val: 1.5, min: 0.0, max: 3.0, step: 0.1, name: "Core Green" },
+            core_b: { group: "Colors: Solar", val: 0.5, min: 0.0, max: 3.0, step: 0.1, name: "Core Blue" },
+            accum_factor: { group: "Colors: Solar", val: 0.045, min: 0.001, max: 0.15, step: 0.001, name: "Main Brightness" },
+
+            iterations: { group: "Layer 1: Solar Surface", val: 19, min: 10, max: 19, step: 1, name: "Detail Layers" },
+            density_exp: { group: "Layer 1: Solar Surface", val: 300, min: 50, max: 800, step: 10, name: "Plasma Sharpness" },
+            geo_scale: { group: "Layer 1: Solar Surface", val: 3.5, min: 1.0, max: 10.0, step: 0.1, name: "Noise Freq" },
+            noise_scale: { group: "Layer 1: Solar Surface", val: 550.0, min: 550.0, max: 1000.0, step: 10.0, name: "Smoothing" },
+            step_add: { group: "Layer 1: Solar Surface", val: 0.02, min: 0.005, max: 0.05, step: 0.001, name: "Step Size" },
+            chaos: { group: "Layer 1: Solar Surface", val: 0.2, min: 0.0, max: 1.0, step: 0.01, name: "Chaos (Warp)" },
+            pulse_mag: { group: "Layer 1: Solar Surface", val: 0.02, min: 0.0, max: 0.1, step: 0.001, name: "Pulse Mag" },
+            core_int: { group: "Layer 1: Solar Surface", val: 1.5, min: 0.0, max: 10.0, step: 0.1, name: "Core Solidity" },
+
+            layer2_int: { group: "Layer 2: The Artifact", val: 0.3, min: 0.0, max: 1.0, step: 0.01, name: "L2 Intensity" },
+            layer2_scale: { group: "Layer 2: The Artifact", val: 7.0, min: 1.0, max: 15.0, step: 0.1, name: "L2 Scale" },
+            l2_r: { group: "Layer 2: The Artifact", val: 5.5, min: 0.0, max: 8.0, step: 0.1, name: "L2 Red" }, 
+            l2_g: { group: "Layer 2: The Artifact", val: 1.2, min: 0.0, max: 8.0, step: 0.1, name: "L2 Green" },
+            l2_b: { group: "Layer 2: The Artifact", val: 0.0, min: 0.0, max: 8.0, step: 0.1, name: "L2 Blue" },
+
+            cam_z: { group: "Camera & Time", val: 2.5, min: 2.2, max: 7.0, step: 0.1, name: "Zoom" },
+            anim_speed: { group: "Camera & Time", val: 1.0, min: 0.0, max: 5.0, step: 0.1, name: "Speed" },
+            anim_vec_z: { group: "Camera & Time", val: 0.4, min: 0.0, max: 2.0, step: 0.1, name: "Warp Flow" },
+        };
+
+        let appState = {
+            startTime: Date.now(),
+            menuOpen: false,
+            autoAdvance: false,
+            advanceInterval: 5000,
+            lastAdvance: Date.now(),
+            fading: false,
+            width: window.innerWidth,
+            height: window.innerHeight,
+            rotation: { x: 0, y: 0 },
+            isDragging: false,
+            lastMouse: { x: 0, y: 0 },
+            dragDistance: 0
+        };
+
+        function compileShader(source, type) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error('Shader error:', gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+            return shader;
+        }
+
+        const vsSource = document.getElementById('vs').text;
+        const fsSource = document.getElementById('fs').text;
+        const vertexShader = compileShader(vsSource, gl.VERTEX_SHADER);
+        const fragmentShader = compileShader(fsSource, gl.FRAGMENT_SHADER);
+        const program = gl.createProgram();
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+        gl.useProgram(program);
+
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+        const positionLocation = gl.getAttribLocation(program, "position");
+        gl.enableVertexAttribArray(positionLocation);
+        gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+        const uniforms = {};
+        const uniformNames = [
+            'u_resolution', 'u_time', 'u_iterations', 'u_density_exp', 
+            'u_accum_factor', 'u_color_base', 'u_color_core', 
+            'u_geo_scale', 'u_noise_scale', 'u_step_add', 'u_cam_z', 
+            'u_anim_speed', 'u_anim_vec', 'u_rotation', 'u_chaos', 
+            'u_pulse_mag', 'u_core_int', 'u_layer2_int', 'u_layer2_scale', 'u_color_l2'
+        ];
+        uniformNames.forEach(n => uniforms[n] = gl.getUniformLocation(program, n));
+
+        const container = document.getElementById('controls-container');
+        
+        function createControls() {
+            container.innerHTML = '';
+            const groups = {};
+            for (const key in params) {
+                const groupName = params[key].group;
+                if (!groups[groupName]) groups[groupName] = [];
+                groups[groupName].push(key);
+            }
+
+            for (const groupName in groups) {
+                const details = document.createElement('details');
+                if(groupName.includes("Colors")) details.open = true;
+
+                const summary = document.createElement('summary');
+                summary.textContent = groupName;
+                details.appendChild(summary);
+
+                groups[groupName].forEach(key => {
+                    const p = params[key];
+                    const div = document.createElement('div');
+                    div.className = 'control-group';
+                    
+                    const label = document.createElement('label');
+                    label.innerHTML = `<span>${p.name}</span> <span id="val-${key}">${p.val.toFixed(3)}</span>`;
+                    
+                    const input = document.createElement('input');
+                    input.id = `input-${key}`;
+                    input.type = 'range';
+                    input.min = p.min;
+                    input.max = p.max;
+                    input.step = p.step;
+                    input.value = p.val;
+                    
+                    input.addEventListener('input', (e) => {
+                        params[key].val = parseFloat(e.target.value);
+                        document.getElementById(`val-${key}`).textContent = params[key].val.toFixed(3);
+                    });
+
+                    div.appendChild(label);
+                    div.appendChild(input);
+                    details.appendChild(div);
+                });
+                container.appendChild(details);
+            }
+        }
+
+        function updateControlsVisuals() {
+            for (const key in params) {
+                const input = document.getElementById(`input-${key}`);
+                const valLabel = document.getElementById(`val-${key}`);
+                if(input) input.value = params[key].val; 
+                if(valLabel) valLabel.textContent = params[key].val.toFixed(3);
+            }
+        }
+
+        function resize() {
+            appState.width = window.innerWidth;
+            appState.height = window.innerHeight;
+            canvas.width = appState.width;
+            canvas.height = appState.height;
+            gl.viewport(0, 0, canvas.width, canvas.height);
+        }
+        window.addEventListener('resize', resize, { passive: true });
+        resize();
+
+        function randomize() {
+            performTransition(() => {
+                for(const key in params) {
+                    const p = params[key];
+                    let r = Math.random() * (p.max - p.min) + p.min;
+                    if(key === 'accum_factor') r = Math.random() * (0.05 - 0.005) + 0.005;
+                    if(key === 'layer2_int') r = Math.random() * 0.8; 
+                    p.val = r;
+                }
+                
+                if (params.color_r.val + params.color_g.val + params.color_b.val < 0.5) params.color_r.val = 1.0; 
+                if (params.core_r.val + params.core_g.val + params.core_b.val < 1.0) {
+                     params.core_r.val += 1.0; params.core_g.val += 1.0; params.core_b.val += 1.0;
+                }
+                if (params.l2_r.val + params.l2_g.val + params.l2_b.val < 1.0) {
+                     params.l2_r.val = 5.0; 
+                }
+                updateControlsVisuals();
+            });
+        }
+
+        function reset() {
+            performTransition(() => {
+                params.iterations.val = 19;
+                params.density_exp.val = 300;
+                params.accum_factor.val = 0.045;
+                params.geo_scale.val = 3.5;
+                params.noise_scale.val = 550.0;
+                params.step_add.val = 0.02;
+                params.cam_z.val = 2.5;
+                params.anim_speed.val = 1.0;
+                params.anim_vec_z.val = 0.4;
+                params.chaos.val = 0.2;
+                params.pulse_mag.val = 0.02;
+                params.core_int.val = 1.5;
+                params.color_r.val = 0.1;
+                params.color_g.val = 0.8;
+                params.color_b.val = 1.5;
+                params.core_r.val = 2.0;
+                params.core_g.val = 1.5;
+                params.core_b.val = 0.5;
+                params.layer2_int.val = 0.3;
+                params.layer2_scale.val = 7.0;
+                params.l2_r.val = 5.5;
+                params.l2_g.val = 1.2;
+                params.l2_b.val = 0.0;
+                appState.rotation.x = 0;
+                appState.rotation.y = 0;
+                updateControlsVisuals();
+            });
+        }
+
+        function performTransition(actionCallback) {
+            if(appState.fading) return;
+            appState.fading = true;
+            canvas.style.opacity = 0;
+            setTimeout(() => {
+                actionCallback();
+                requestAnimationFrame(() => {
+                    canvas.style.opacity = 1;
+                    setTimeout(() => { appState.fading = false; }, 500);
+                });
+            }, 500);
+        }
+
+        function render() {
+            const time = (Date.now() - appState.startTime) * 0.001;
+
+            if(appState.autoAdvance && !appState.fading && !appState.isDragging) {
+                if(Date.now() - appState.lastAdvance > appState.advanceInterval) {
+                    randomize();
+                    appState.lastAdvance = Date.now();
+                }
+            }
+
+            gl.uniform2f(uniforms.u_resolution, canvas.width, canvas.height);
+            gl.uniform1f(uniforms.u_time, time);
+            
+            for(const key in params) {
+                if(uniforms[`u_${key}`]) {
+                    gl.uniform1f(uniforms[`u_${key}`], params[key].val);
+                }
+            }
+
+            gl.uniform3f(uniforms.u_color_base, params.color_r.val, params.color_g.val, params.color_b.val);
+            gl.uniform3f(uniforms.u_color_core, params.core_r.val, params.core_g.val, params.core_b.val);
+            gl.uniform3f(uniforms.u_color_l2, params.l2_r.val, params.l2_g.val, params.l2_b.val);
+            gl.uniform3f(uniforms.u_anim_vec, 0.0, 0.0, params.anim_vec_z.val);
+            gl.uniform2f(uniforms.u_rotation, appState.rotation.x, appState.rotation.y);
+
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            requestAnimationFrame(render);
+        }
+
+        const menuBtn = document.getElementById('menu-btn');
+        const settingsPanel = document.getElementById('settings-panel');
+        const btnRandom = document.getElementById('btn-random');
+        const btnReset = document.getElementById('btn-reset');
+        const btnExport = document.getElementById('btn-export');
+        const autoToggle = document.getElementById('auto-advance-toggle');
+
+        function onPointerDown(e) {
+            if(appState.menuOpen && e.target !== canvas) return;
+            if(e.target !== canvas && e.target.parentElement !== document.body) return;
+            appState.isDragging = true;
+            appState.dragDistance = 0;
+            appState.lastMouse.x = e.clientX || e.touches[0].clientX;
+            appState.lastMouse.y = e.clientY || e.touches[0].clientY;
+        }
+
+        function onPointerMove(e) {
+            if(!appState.isDragging) return;
+            const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+            const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+            const dx = clientX - appState.lastMouse.x;
+            const dy = clientY - appState.lastMouse.y;
+            appState.dragDistance += Math.abs(dx) + Math.abs(dy);
+            appState.rotation.x += dx * 0.01;
+            appState.rotation.y += dy * 0.01;
+            appState.lastMouse.x = clientX;
+            appState.lastMouse.y = clientY;
+        }
+
+        function onPointerUp(e) {
+            if(!appState.isDragging) return;
+            appState.isDragging = false;
+            if(appState.dragDistance < 5) {
+                 if(!appState.menuOpen) {
+                    randomize();
+                    appState.lastAdvance = Date.now();
+                }
+            }
+        }
+
+        canvas.addEventListener('mousedown', onPointerDown);
+        window.addEventListener('mousemove', onPointerMove, { passive: true });
+        window.addEventListener('mouseup', onPointerUp);
+        canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+        window.addEventListener('touchmove', onPointerMove, { passive: false });
+        window.addEventListener('touchend', onPointerUp);
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = Math.sign(e.deltaY) * 0.2;
+            let newVal = params.cam_z.val + delta;
+            newVal = Math.max(params.cam_z.min, Math.min(params.cam_z.max, newVal));
+            params.cam_z.val = newVal;
+            updateControlsVisuals();
+        }, { passive: false });
+
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            appState.menuOpen = !appState.menuOpen;
+            menuBtn.setAttribute('aria-expanded', appState.menuOpen);
+            if(appState.menuOpen) {
+                settingsPanel.classList.add('open');
+                menuBtn.style.transform = "rotate(90deg)";
+            } else {
+                settingsPanel.classList.remove('open');
+                menuBtn.style.transform = "rotate(0deg)";
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!settingsPanel.contains(e.target) && !menuBtn.contains(e.target) && appState.menuOpen) {
+                appState.menuOpen = false;
+                menuBtn.setAttribute('aria-expanded', false);
+                settingsPanel.classList.remove('open');
+                menuBtn.style.transform = "rotate(0deg)";
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if(e.key === "Escape" && appState.menuOpen) {
+                appState.menuOpen = false;
+                menuBtn.setAttribute('aria-expanded', false);
+                settingsPanel.classList.remove('open');
+                menuBtn.style.transform = "rotate(0deg)";
+            }
+        });
+
+        btnRandom.addEventListener('click', randomize);
+        btnReset.addEventListener('click', reset);
+        autoToggle.addEventListener('change', (e) => {
+            appState.autoAdvance = e.target.checked;
+            appState.lastAdvance = Date.now();
+        });
+
+        btnExport.addEventListener('click', () => {
+            const originalWidth = canvas.width;
+            const originalHeight = canvas.height;
+            canvas.width = 3840;
+            canvas.height = 2160;
+            gl.viewport(0, 0, 3840, 2160);
+            render(); 
+            try {
+                const dataURL = canvas.toDataURL('image/png', 1.0);
+                const link = document.createElement('a');
+                link.download = `Sun_Spots_Wallpaper_${Date.now()}.png`;
+                link.href = dataURL;
+                link.click();
+            } catch(e) {
+                console.error("Export error", e);
+            }
+            canvas.width = originalWidth;
+            canvas.height = originalHeight;
+            gl.viewport(0, 0, originalWidth, originalHeight);
+        });
+
+        createControls();
+        randomize(); 
+        render(); 
+    </script>
+</body>
+</html>
